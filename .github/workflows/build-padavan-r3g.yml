@@ -1,14 +1,7 @@
 #修改TNAME: K2P-5.0 中的K2P-5.0为你需要编译的型号，注意名称要与configs/templates/目录下的名字相同
-name: Build Padavan r3g
+name: Build Padavan JDC-1
 on: 
-  release:
-    types: [published]
-  push:
-    tags:
-    - 'v*'
-  watch:
-    types: [started]
-  workflow_dispatch:   # 手动触发，页面出现Run workflow按钮
+  workflow_dispatch:   # 仅保留手动触发，页面出现Run workflow按钮
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -43,41 +36,19 @@ jobs:
         mkdir -p /opt/images/
     - name: Build Firmware
       env:
-        TNAME:JDC-1
+        TNAME: JDC-1
       run: |
         cd /opt/rt-n56u/trunk
-        # ===================== 关键修复：删除tools Makefile里的go_build依赖，不再执行go编译 =====================
+        # 关键修复：删除tools Makefile里的go_build依赖，不再执行go编译
         sed -i 's/go_build//g' tools/Makefile
-        # ======================================================================================================
+
         if [ ! -f configs/templates/$TNAME.config ] ; then
-        echo "configs/templates/$TNAME.config not found "
-        exit 1
+          echo "configs/templates/$TNAME.config not found "
+          exit 1
         fi
         cp -f configs/templates/$TNAME.config .config
-        sed -i 's/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=n/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=y/g' .config
-        ################################################################################################
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_MENTOHUST/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_SCUTCLIENT/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_SSSERVER/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_DNSFORWARDER/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_ADBYBY/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_FRPC/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_FRPS/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_TUNSAFE/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_ALIDDNS/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_SMARTDNS/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_SRELAY/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_V2RAY/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_CADDY/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_ZEROTIER/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_ADGUARDHOME/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_TROJAN/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_KOOLPROXY/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_WYY/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_WYYBIN/d' .config
-        sed -i '/CONFIG_FIRMWARE_INCLUDE_SSOBFS/d' .config
-        ######################################################################
+
+        # 统一强制关闭所有代理类插件
         echo "CONFIG_FIRMWARE_INCLUDE_MENTOHUST=n" >> .config
         echo "CONFIG_FIRMWARE_INCLUDE_SCUTCLIENT=n" >> .config
         echo "CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS=n" >> .config
@@ -103,9 +74,8 @@ jobs:
         echo "CONFIG_FIRMWARE_INCLUDE_ZEROTIER=n" >> .config
         
         sudo ./clear_tree
-        # ========= 修改这里第二个参数 1 → 0，只编译trx =========
+        # 参数 0：只编译trx
         sudo ./build_firmware_modify $TNAME 0
-        # 仅复制trx文件，其他文件丢弃
         sudo mv -f images/*.trx /opt/images/
     - name: Upload packages
       uses: actions/upload-artifact@v4
