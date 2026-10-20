@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       TARGET_MODEL:
-        description: '选择编译机型(对应configs/templates下文件名)'
+        description: '选择编译机型(对应configs/templates下文件名，不要带.config后缀)'
         required: true
         default: 'JDC-1-5.0'
         type: choice
@@ -35,9 +35,9 @@ jobs:
           DEBIAN_FRONTEND: noninteractive
         run: |
           sudo apt-get update
-          sudo apt-get -y install unzip libtool-bin curl cmake gperf gawk flex bison nano xxd fakeroot \
+          sudo apt-get -y install unzip libtool-bin curl cmake gawk flex bison nano xxd fakeroot \
           cpio git python3-docutils gettext automake autopoint texinfo build-essential help2man \
-          pkg-config zlib1g-dev libgmp3-dev libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget
+          pkg-config zlib1g-dev libgmp3-dev libmpc-dev libncurses5-dev libltdl-dev wget
 
       - name: Clone source code
         run: |
