@@ -43,7 +43,7 @@ jobs:
         mkdir -p /opt/images/
     - name: Build Firmware
       env:
-        TNAME: JDC-1
+        TNAME:JDC-1
       run: |
         cd /opt/rt-n56u/trunk
         # ===================== 关键修复：删除tools Makefile里的go_build依赖，不再执行go编译 =====================
