@@ -46,6 +46,9 @@ jobs:
         TNAME: JDC-1-5.0
       run: |
         cd /opt/rt-n56u/trunk
+        # ===================== 关键修复：删除tools Makefile里的go_build依赖，不再执行go编译 =====================
+        sed -i 's/go_build//g' tools/Makefile
+        # ======================================================================================================
         if [ ! -f configs/templates/$TNAME.config ] ; then
         echo "configs/templates/$TNAME.config not found "
         exit 1
