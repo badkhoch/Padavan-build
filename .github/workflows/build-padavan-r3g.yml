@@ -1,85 +1,98 @@
-#修改TNAME: K2P-5.0 中的K2P-5.0为你需要编译的型号，注意名称要与configs/templates/目录下的名字相同
-name: Build Padavan JDC-1
-on: 
-  workflow_dispatch:   # 仅保留手动触发，页面出现Run workflow按钮
+name: Build Padavan JDC-1 Clean
+on:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-22.04
     if: github.event.repository.owner.id == github.event.sender.id
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Initialization environment
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        sudo apt-get update
-        sudo apt-get -y install unzip libtool-bin curl cmake gperf gawk flex bison nano xxd fakeroot \
-        cpio git python3-docutils gettext automake autopoint texinfo build-essential help2man \
-        pkg-config zlib1g-dev libgmp3-dev libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget
-    - name: Clone source code
-      run: |
-        git clone --depth=1 https://github.com/xumng123/rt-n56u.git /opt/rt-n56u
-    - name: Cache toolchain
-      id: cache-toolchain
-      uses: actions/cache@v4
-      with:
-        path: /opt/rt-n56u/toolchain-mipsel
-        key: padavan-toolchain-mipsel-v1
-    - name: Download toolchain (miss cache)
-      if: steps.cache-toolchain.outputs.cache-hit != 'true'
-      run: |
-        cd /opt/rt-n56u/toolchain-mipsel
-        sh dl_toolchain.sh
-    - name: Prepare output dir
-      run: |
-        mkdir -p /opt/images/
-    - name: Build Firmware
-      env:
-        TNAME: JDC-1
-      run: |
-        cd /opt/rt-n56u/trunk
-        # 关键修复：删除tools Makefile里的go_build依赖，不再执行go编译
-        sed -i 's/go_build//g' tools/Makefile
+      - name: Checkout
+        uses: actions/checkout@v4
 
-        if [ ! -f configs/templates/$TNAME.config ] ; then
-          echo "configs/templates/$TNAME.config not found "
-          exit 1
-        fi
-        cp -f configs/templates/$TNAME.config .config
+      - name: Initialization environment
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install unzip libtool-bin curl cmake gperf gawk flex bison nano xxd fakeroot \
+          cpio git python3-docutils gettext automake autopoint texinfo build-essential help2man \
+          pkg-config zlib1g-dev libgmp3-dev libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget
 
-        # 统一强制关闭所有代理类插件
-        echo "CONFIG_FIRMWARE_INCLUDE_MENTOHUST=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_SCUTCLIENT=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_SSOBFS=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_SSSERVER=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_DNSFORWARDER=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_ADBYBY=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_FRPC=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_FRPS=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_TUNSAFE=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_ALIDDNS=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_SMARTDNS=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_SMARTDNSBIN=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_V2RAY=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_TROJAN=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_KOOLPROXY=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_CADDY=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_CADDYBIN=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_ADGUARDHOME=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_SRELAY=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_WYY=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_WYYBIN=n" >> .config
-        echo "CONFIG_FIRMWARE_INCLUDE_ZEROTIER=n" >> .config
-        
-        sudo ./clear_tree
-        # 参数 0：只编译trx
-        sudo ./build_firmware_modify $TNAME 0
-        sudo mv -f images/*.trx /opt/images/
-    - name: Upload packages
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: Padavan-trx-${{ env.TNAME }}
-        path: /opt/images
+      - name: Clone source code
+        run: |
+          git clone --depth=1 https://github.com/xumng123/rt-n56u.git /opt/rt-n56u
+
+      - name: Cache toolchain
+        id: cache-toolchain
+        uses: actions/cache@v4
+        with:
+          path: /opt/rt-n56u/toolchain-mipsel
+          key: padavan-toolchain-mipsel-v1
+
+      - name: Download toolchain (miss cache)
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          cd /opt/rt-n56u/toolchain-mipsel
+          sh dl_toolchain.sh
+
+      - name: Prepare output dir
+        run: |
+          mkdir -p /opt/images/
+
+      - name: Build Firmware
+        env:
+          TNAME: JDC-1
+        run: |
+          cd /opt/rt-n56u/trunk
+          sed -i 's/go_build//g' tools/Makefile
+
+          if [ ! -f configs/templates/$TNAME.config ] ; then
+            echo "configs/templates/$TNAME.config not found "
+            exit 1
+          fi
+          cp -f configs/templates/$TNAME.config .config
+
+          # 全部第三方插件强制关闭
+          echo "CONFIG_FIRMWARE_INCLUDE_MENTOHUST=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_SCUTCLIENT=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_GDUT_DRCOM=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_DOGCOM=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_MINIEAP=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_NJIT_CLIENT=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_NAPT66=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_SSSERVER=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_SSOBFS=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_DNSFORWARDER=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_ADBYBY=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_FRPC=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_FRPS=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_TUNSAFE=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_ALIDDNS=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_SMARTDNS=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_SMARTDNSBIN=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_V2RAY=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_TROJAN=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_KOOLPROXY=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_CADDY=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_CADDYBIN=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_ADGUARDHOME=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_SRELAY=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_WYY=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_WYYBIN=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_ZEROTIER=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_SERVER=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_CLIENT=n" >> .config
+          echo "CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_CMD=n" >> .config
+
+          sudo ./clear_tree
+          sudo ./build_firmware_modify $TNAME 0
+          sudo mv -f images/*.trx /opt/images/
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Padavan-Clean-JDC1-trx
+          path: /opt/images
